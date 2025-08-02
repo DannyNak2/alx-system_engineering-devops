@@ -1,4 +1,2 @@
 #!/bin/bash
-# This script prints a greeting to the current user.
-# It uses the $USER environment variable to get the current user's name.
 echo "hello $USER"
