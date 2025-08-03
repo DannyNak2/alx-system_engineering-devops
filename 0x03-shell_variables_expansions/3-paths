@@ -1,2 +1,10 @@
 #!/bin/bash
-echo "$PATH" | tr ':' '\n' | wc -l
+
+FILE_COUNT=0
+IFS=':' read -ra ADDR <<< "$PATH"
+for i in "${ADDR[@]}"; do
+  FILE_COUNT=$((FILE_COUNT+1))
+done
+
+echo  $FILE_COUNT
+
