@@ -1,0 +1,65 @@
+## Web Server vs Application Server - What's the Difference?
+
+**IMAGE** https://imgur.com/a/rkvKba8
+
+# Web Server:
+
+Purpose: Handles HTTP requests and serves static content (HTML, CSS, JavaScript, images)
+Examples: Nginx, Apache HTTP Server
+Strengths: Very fast at serving files, excellent at handling many simultaneous connections
+Role: Acts as the "front door" - receives requests from users and decides what to do with them
+
+# Application Server:
+
+Purpose: Executes business logic and generates dynamic content
+Examples: Tomcat (Java), Node.js, Gunicorn (Python), Puma (Ruby)
+Strengths: Can run programming languages, process complex calculations, manage user sessions
+Role: Acts as the "brain" - processes data and creates personalized responses
+
+# Why Add These Components?
+1. Additional Server (Separated Components)
+Why Added:
+
+Performance: Each server can be optimized for its specific task
+Scalability: You can scale each component independently based on demand
+Security: Database is isolated from direct internet access
+Maintenance: Updates to one component don't affect others
+
+2. HAProxy Load Balancer Cluster
+Why Added:
+
+High Availability: If one load balancer fails, the other takes over instantly
+No Single Point of Failure: The load balancer itself won't bring down your entire system
+Better Distribution: More intelligent request routing between multiple web servers
+Health Monitoring: Can detect failed servers and stop sending traffic to them
+
+3. Component Separation (3-Tier Architecture)
+Why This Approach:
+Web Server Layer:
+
+Handles 80% of requests (static files) without involving other servers
+Provides SSL/TLS encryption
+Acts as a security buffer between internet and application layer
+Can cache frequently requested content
+
+# Application Server Layer:
+
+Focused solely on business logic processing
+Can be written in different programming languages as needed
+Easier to debug and update application code
+Sessions and user state management
+
+# Database Layer:
+
+Dedicated resources for data operations
+Can be optimized with specialized hardware (fast SSDs, lots of RAM)
+Master-replica setup ensures data backup and read scalability
+Database security is isolated from web traffic
+
+# Real-World Benefits:
+
+Performance: Static files served instantly by web server, only dynamic requests reach app server
+Scalability: Add more app servers during busy periods, keep web server count stable
+Cost Efficiency: Use cheaper servers for web layer, invest in powerful hardware for database
+Development: Frontend and backend teams can work independently
+Troubleshooting: Easy to identify if problems are in web delivery, app logic, or data layer

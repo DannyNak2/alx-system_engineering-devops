@@ -1,0 +1,65 @@
+## Three Server Secured Infrastructure
+
+**IMAGE** https://imgur.com/a/0wenjqq
+
+3 Firewalls
+
+Edge firewall (between Internet and LB): allows only required public ports (80/443 to LB), blocks everything else; protects entire network from random internet scans and attacks.
+
+Internal firewall (between LB/web tier and app tier): enforces micro-segmentation — only allowed traffic (HTTP/HTTPS from LB, management from bastion) flows to the app tier.
+
+DB firewall (DB network): restricts DB access (only app servers / trusted IPs on 3306, plus monitoring/proxy IPs). Limits blast radius if an app server is compromised.
+
+1 SSL Certificate (www.foobar.com)
+
+An X.509 cert to terminate TLS so clients connect securely over HTTPS and web traffic (cookies, tokens, passwords, API calls) are encrypted in transit.
+
+3 Monitoring clients / collectors (one per tier or colocated):
+
+Lightweight data collectors (for example: Prometheus node_exporter / HAProxy exporter, Fluentd or SumoLogic collector, or a StatsD/Telegraf agent) deployed near each tier to collect logs, metrics and traces and forward them to the central monitoring/observability platform.
+
+What firewalls are for
+
+Firewalls enforce network policies: they filter traffic by source/destination IP, port and protocol. They reduce attack surface, prevent lateral movement after a breach, separate environments (public vs private), and can implement logging/alerting for suspicious flows.
+
+Why traffic is served over HTTPS
+
+Confidentiality: encrypts payload (prevents eavesdropping).
+
+Integrity: prevents tampering in transit.
+
+Authentication: ensures clients talk to the legitimate www.foobar.com (via CA-signed cert).
+
+Compliance & browsers: modern browsers and standards require HTTPS for features (service workers, secure cookies, HSTS) and display warnings for plaintext sites.
+
+What monitoring is used for
+
+Metrics: CPU, memory, disk, network, request counts, latencies, DB metrics, replication lag. (Prometheus, Collectd, Telegraf)
+
+Logs: access logs, error logs, application logs, audit logs (Fluentd/Logstash -> Elasticsearch / SumoLogic / Splunk).
+
+Traces: distributed tracing for request flows and latency hotspots (OpenTelemetry, Jaeger).
+
+Alerts: Alertmanager / SumoLogic alerts for threshold breaches (high error rate, high CPU, replication lag).
+
+Dashboards: Grafana or SumoLogic dashboards for visualizing QPS, latency percentiles, errors, capacity.
+
+How the monitoring tool is collecting data
+
+Metrics: exporters / agents run on each host (Prometheus exporters or Telegraf) and either push to a gateway or expose an HTTP endpoint scraped by Prometheus. Alternatively, some SaaS collectors use push mode: local agent batches metrics and sends them on a secure channel to the cloud collector (e.g., SumoLogic collector).
+
+Logs: log forwarder (Fluentd / Filebeat) tails log files and securely forwards to central store. Logs can be enriched with metadata (host, service, pod, env).
+
+Traces: instrument app code with OpenTelemetry SDK; spans are exported to a tracer collector.
+
+Security & network telemetry: firewall logs and flow logs are also shipped to the monitoring backend for analysis.
+
+How to monitor web server QPS (queries/requests per second)
+
+Method A (metrics scrape): Use Nginx/Haproxy exporters that expose request counters. Prometheus scrapes an HTTP metrics endpoint every 10s; compute rate over a 1m window: rate(nginx_http_requests_total[1m]) or sum by (instance)(rate(nginx_http_requests_total[5m])) to get QPS per instance or total.
+
+Method B (logs): ingest Nginx access logs into the log platform and run a rolling query: count(status) by 1s or count() | time_window(1s) to compute per-second request rate.
+
+Method C (LB metrics): HAProxy provides per-second request counters — often the best single place to measure front-door QPS (counts all inbound requests before any routing or caching).
+
+Recommendation: use LB metrics for global QPS and per-web metrics (Nginx) for finer-grained per-host QPS. Alert on sustained QPS surges beyond baseline.

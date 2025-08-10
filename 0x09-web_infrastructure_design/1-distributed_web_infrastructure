@@ -1,0 +1,29 @@
+## This is a minimal three-server layout:
+
+**IMAGE** https://imgur.com/a/hcF9Lxr
+
+Server1 = HAProxy (LB); Server2 = Nginx web server; Server3 = App server which also hosts MySQL Primary.
+
+The Nginx server serves static assets, does caching, and reverse-proxies to the app server. HAProxy routes traffic to the Nginx server(s).
+
+Application files (codebase) live on the application server (or in a shared repo/artifact deployed to the web/app servers).
+
+HAProxy (Load Balancer) — in front, accepts client requests and distributes them to web servers.
+
+Why: hides backend servers, provides health checks, enables scaling and zero-downtime deploys.
+
+Nginx (Web server / reverse proxy) — serves static files quickly, TLS offloading (if present), and forwards dynamic requests to the application.
+
+Why: static files and caching are faster at the web tier; offloads work from app server.
+
+Application Server (app runtime) — runs business logic, runs the codebase, connects to the DB.
+
+Why: executes dynamic logic, processes requests that need database access, business rules.
+
+MySQL (Database) — persistent storage for users, sessions, data.
+
+Why: durable, ACID storage for application data.
+
+Application files (code base) — deployed to the app server (and potentially to web servers for SSR/static assets).
+
+Why: the code the app runs — must be deployed and versioned.
