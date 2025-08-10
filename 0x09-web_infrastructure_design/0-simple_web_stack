@@ -1,7 +1,7 @@
-1. The Request: From Browser to Server
+# 1. The Request: From Browser to Server
 Everything begins when a user wants to visit your website.
 
-Domain Name Resolution (DNS)
+**Domain Name Resolution (DNS)**
 First, the user types www.foobar.com into their browser. Computers don't understand domain names; they communicate using numerical IP addresses. The browser's first job is to translate this name into the server's address, 8.8.8.8. This is handled by the Domain Name System (DNS), which acts like the internet's phonebook.
 
 The browser checks its own cache to see if it already knows the IP for www.foobar.com.
@@ -14,24 +14,24 @@ The resolver queries a series of authoritative DNS servers until it finds the on
 
 This IP address is sent all the way back to the user's browser.
 
-Establishing a Connection (TCP/IP)
+**Establishing a Connection (TCP/IP)**
 Now that the browser has the server's IP address, it must establish a reliable connection. This is done using the Transmission Control Protocol/Internet Protocol (TCP/IP).
 
 The browser initiates a "three-way handshake" with the server at 8.8.8.8 to ensure both are ready to communicate.
 
 Once the connection is established, the browser sends an HTTP (Hypertext Transfer Protocol) request. This request contains information like the requested page (/), the browser type (User-Agent), and other headers.
 
-2. Inside the Server: Processing the Request
+# 2. Inside the Server: Processing the Request
 The HTTP request has now arrived at your server. Here's how the different software components work together.
 
-The Front Door: Web Server (Nginx)
+**The Front Door: Web Server (Nginx)**
 The web server, Nginx, is the first piece of software to receive the request. It acts as the server's traffic controller and is highly efficient at handling two types of requests:
 
 Static Content: If the request is for a file that doesn't change, like an image (logo.png), a stylesheet (style.css), or a JavaScript file (main.js), Nginx grabs it directly from the server's file system and sends it back to the browser immediately. This is extremely fast.
 
 Dynamic Content: If the request is for a page that needs to be built on the fly (e.g., a user's profile page or a blog post), Nginx cannot handle it alone. In this case, it acts as a reverse proxy, forwarding the request to the application server for processing.
 
-The Brain: Application Server
+**The Brain: Application Server**
 The application server is responsible for executing your website's logic. It runs your application files—the code written in a language like Python, PHP, or Ruby.
 
 It receives the request from Nginx.
@@ -40,7 +40,7 @@ It analyzes the request to understand what the user wants (e.g., "show me the la
 
 The application code determines that it needs data to fulfill this request. It needs to fetch the blog post's content from the database.
 
-The Memory: Database (MySQL)
+**The Memory: Database (MySQL)**
 The database, MySQL, is where all of your application's persistent data is stored in an organized, structured way (in tables with rows and columns).
 
 The application server constructs a query in SQL (Structured Query Language), something like SELECT * FROM posts ORDER BY creation_date DESC LIMIT 1;.
@@ -49,7 +49,7 @@ This query is sent to the MySQL database server.
 
 MySQL executes the query, retrieves the requested data (the latest blog post), and sends it back to the application server.
 
-3. The Response: From Server to Browser
+# 3. The Response: From Server to Browser
 Now the application server has everything it needs to build the page.
 
 The application code takes the data from the database and inserts it into an HTML template.
@@ -62,7 +62,7 @@ Nginx wraps it in an HTTP response and sends it across the internet to the user'
 
 The browser receives the HTML, parses it, and renders the final webpage. It may then make additional requests for the static content (CSS, images) mentioned in the HTML, which Nginx will serve directly.
 
-4. The Inherent Problems of This Design
+# 4. The Inherent Problems of This Design
 While simple and cheap, this single-server design has critical flaws for any serious application.
 
 Single Point of Failure (SPOF): Because every component resides on one machine, any single failure brings the entire site down. If the server's hard drive fails, Nginx crashes, or the database gets corrupted, your website is offline. There is no redundancy.
