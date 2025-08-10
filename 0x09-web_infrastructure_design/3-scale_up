@@ -1,65 +1,91 @@
-## Web Server vs Application Server - What's the Difference?
+Scale Up – Highly Available Web Infrastructure
+Architecture Diagram (Text Form)
 
-**IMAGE** https://imgur.com/a/rkvKba8
+               Internet
+                   |
+        +----------------------+
+        |   HAProxy LB #1      |
+        +----------------------+
+                   |
+        +----------------------+
+        |   HAProxy LB #2      |
+        +----------------------+
+         /         |         \
+        /          |          \
++-----------+ +-----------+ +-----------+
+| Web Server| | Web Server| | Web Server|
+|  (Nginx)  | |  (Nginx)  | |  (Nginx)  |
++-----------+ +-----------+ +-----------+
+     |             |            |
+     |             |            |
++-----------+ +-----------+ +-----------+
+| App Server| | App Server| | App Server|
++-----------+ +-----------+ +-----------+
+     \             |            /
+      \            |           /
+       \           |          /
+        +-------------------+
+        |   DB Primary      |
+        +-------------------+
+                 |
+        +-------------------+
+        |   DB Replica      |
+        +-------------------+
 
-# Web Server:
+Additional Elements and Why They Are Added
+Extra Load Balancer (HAProxy #2)
 
-Purpose: Handles HTTP requests and serves static content (HTML, CSS, JavaScript, images)
-Examples: Nginx, Apache HTTP Server
-Strengths: Very fast at serving files, excellent at handling many simultaneous connections
-Role: Acts as the "front door" - receives requests from users and decides what to do with them
+Works in a clustered setup with Load Balancer #1 for high availability.
 
-# Application Server:
+If one load balancer fails, the other takes over automatically.
 
-Purpose: Executes business logic and generates dynamic content
-Examples: Tomcat (Java), Node.js, Gunicorn (Python), Puma (Ruby)
-Strengths: Can run programming languages, process complex calculations, manage user sessions
-Role: Acts as the "brain" - processes data and creates personalized responses
+Prevents the load balancer from being a single point of failure.
 
-# Why Add These Components?
-1. Additional Server (Separated Components)
-Why Added:
+Dedicated Web Server(s)
 
-Performance: Each server can be optimized for its specific task
-Scalability: You can scale each component independently based on demand
-Security: Database is isolated from direct internet access
-Maintenance: Updates to one component don't affect others
+Runs Nginx to handle static content and reverse-proxy requests to application servers.
 
-2. HAProxy Load Balancer Cluster
-Why Added:
+Isolating web servers means web traffic handling doesn’t interfere with application logic.
 
-High Availability: If one load balancer fails, the other takes over instantly
-No Single Point of Failure: The load balancer itself won't bring down your entire system
-Better Distribution: More intelligent request routing between multiple web servers
-Health Monitoring: Can detect failed servers and stop sending traffic to them
+Dedicated Application Server(s)
 
-3. Component Separation (3-Tier Architecture)
-Why This Approach:
-Web Server Layer:
+Runs backend code and business logic.
 
-Handles 80% of requests (static files) without involving other servers
-Provides SSL/TLS encryption
-Acts as a security buffer between internet and application layer
-Can cache frequently requested content
+Keeps CPU-intensive processing separate from web content delivery.
 
-# Application Server Layer:
+Allows independent scaling of the application layer.
 
-Focused solely on business logic processing
-Can be written in different programming languages as needed
-Easier to debug and update application code
-Sessions and user state management
+Dedicated Database Server(s)
 
-# Database Layer:
+Primary DB handles all writes.
 
-Dedicated resources for data operations
-Can be optimized with specialized hardware (fast SSDs, lots of RAM)
-Master-replica setup ensures data backup and read scalability
-Database security is isolated from web traffic
+Replica DB handles read requests to improve performance and availability.
 
-# Real-World Benefits:
+Isolation ensures that DB performance is not degraded by other workloads.
 
-Performance: Static files served instantly by web server, only dynamic requests reach app server
-Scalability: Add more app servers during busy periods, keep web server count stable
-Cost Efficiency: Use cheaper servers for web layer, invest in powerful hardware for database
-Development: Frontend and backend teams can work independently
-Troubleshooting: Easy to identify if problems are in web delivery, app logic, or data layer
+How the Load Balancer Cluster Works
+Active-Passive Configuration:
+Only one load balancer handles traffic at a time; the second stands by and takes over on failure.
+
+Active-Active Configuration:
+Both load balancers share traffic simultaneously, increasing throughput.
+
+Failover: Managed using tools like Keepalived or VRRP, which assign a virtual IP that switches between load balancers.
+
+Why Split Components onto Separate Servers
+Better Performance: Each tier (web, app, DB) can be optimized for its workload.
+
+Easier Scaling: You can scale only the tier that needs more resources (e.g., add more app servers if processing is slow).
+
+Security Benefits: Sensitive DBs can be isolated from direct internet access.
+
+Fault Isolation: Failure in one tier doesn’t directly affect the others.
+
+Application Server vs Web Server
+Web Server (e.g., Nginx, Apache):
+Handles HTTP(S) requests, serves static files, and forwards dynamic requests to application servers.
+
+Application Server (e.g., Gunicorn, uWSGI, Node.js runtime):
+Runs the backend application logic, processes requests, interacts with databases, and returns responses to the web server.
+
+This setup allows horizontal scaling (adding more servers to each tier) and high availability (redundancy in load balancers and DB replication).

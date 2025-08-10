@@ -1,72 +1,100 @@
-# 1. The Request: From Browser to Server
-Everything begins when a user wants to visit your website.
+Simple Web Infrastructure (1 Server)
+Architecture (Text Diagram)
 
-**Domain Name Resolution (DNS)**
-First, the user types www.foobar.com into their browser. Computers don't understand domain names; they communicate using numerical IP addresses. The browser's first job is to translate this name into the server's address, 8.8.8.8. This is handled by the Domain Name System (DNS), which acts like the internet's phonebook.
+User's Browser
+       |
+   Internet
+       |
+[ Domain: www.foobar.com ]
+       |
+ DNS resolves to IP (8.8.8.8)
+       |
++--------------------------------+
+|        Single Server           |
+| IP: 8.8.8.8                    |
+|                                |
+|  [ Nginx - Web Server ]        |
+|         ↓                      |
+|  [ Application Server ]        |
+|         ↓                      |
+|  [ MySQL Database ]            |
+|                                |
+|  Application Files (Code Base) |
++--------------------------------+
 
-The browser checks its own cache to see if it already knows the IP for www.foobar.com.
+How It Works (Step-by-Step)
+User Requests the Website
 
-If not, it asks the computer's operating system, which also has a cache.
+The user types www.foobar.com into their browser.
 
-If it's still not found, the request goes to a DNS resolver (usually provided by your Internet Service Provider).
+The browser queries the DNS to find the IP address of the domain.
 
-The resolver queries a series of authoritative DNS servers until it finds the one responsible for the foobar.com domain. This server holds the A Record, which explicitly maps the www subdomain to the IP address 8.8.8.8.
+DNS Resolution
 
-This IP address is sent all the way back to the user's browser.
+The www record is a CNAME or A record pointing to 8.8.8.8 (our server’s public IP).
 
-**Establishing a Connection (TCP/IP)**
-Now that the browser has the server's IP address, it must establish a reliable connection. This is done using the Transmission Control Protocol/Internet Protocol (TCP/IP).
+DNS returns the IP to the browser.
 
-The browser initiates a "three-way handshake" with the server at 8.8.8.8 to ensure both are ready to communicate.
+Connection to Server
 
-Once the connection is established, the browser sends an HTTP (Hypertext Transfer Protocol) request. This request contains information like the requested page (/), the browser type (User-Agent), and other headers.
+The browser sends an HTTP/HTTPS request to 8.8.8.8 over the internet.
 
-# 2. Inside the Server: Processing the Request
-The HTTP request has now arrived at your server. Here's how the different software components work together.
+The server receives the request.
 
-**The Front Door: Web Server (Nginx)**
-The web server, Nginx, is the first piece of software to receive the request. It acts as the server's traffic controller and is highly efficient at handling two types of requests:
+Web Server (Nginx)
 
-Static Content: If the request is for a file that doesn't change, like an image (logo.png), a stylesheet (style.css), or a JavaScript file (main.js), Nginx grabs it directly from the server's file system and sends it back to the browser immediately. This is extremely fast.
+Nginx handles the incoming request.
 
-Dynamic Content: If the request is for a page that needs to be built on the fly (e.g., a user's profile page or a blog post), Nginx cannot handle it alone. In this case, it acts as a reverse proxy, forwarding the request to the application server for processing.
+If it’s a static file (CSS, JS, images), Nginx serves it directly.
 
-**The Brain: Application Server**
-The application server is responsible for executing your website's logic. It runs your application files—the code written in a language like Python, PHP, or Ruby.
+If it’s a dynamic request (e.g., fetching user profile data), Nginx passes it to the application server.
 
-It receives the request from Nginx.
+Application Server
 
-It analyzes the request to understand what the user wants (e.g., "show me the latest blog post").
+Runs the backend code (e.g., PHP, Python, or Node.js).
 
-The application code determines that it needs data to fulfill this request. It needs to fetch the blog post's content from the database.
+Processes the request, which may involve business logic and database queries.
 
-**The Memory: Database (MySQL)**
-The database, MySQL, is where all of your application's persistent data is stored in an organized, structured way (in tables with rows and columns).
+Database (MySQL)
 
-The application server constructs a query in SQL (Structured Query Language), something like SELECT * FROM posts ORDER BY creation_date DESC LIMIT 1;.
+Stores and retrieves persistent data.
 
-This query is sent to the MySQL database server.
+The application server sends SQL queries to MySQL and processes the results.
 
-MySQL executes the query, retrieves the requested data (the latest blog post), and sends it back to the application server.
+Response Sent Back
 
-# 3. The Response: From Server to Browser
-Now the application server has everything it needs to build the page.
+Application server returns the generated content (HTML, JSON, etc.) to Nginx.
 
-The application code takes the data from the database and inserts it into an HTML template.
+Nginx sends the response back to the user’s browser.
 
-It generates the final, complete HTML document for the requested page.
+Roles of Each Component
+Server:
+A physical or virtual machine that runs services and stores data, responding to requests over the network.
 
-This document is sent back to Nginx.
+Domain Name (foobar.com):
+Human-readable address that maps to the server’s IP address.
 
-Nginx wraps it in an HTTP response and sends it across the internet to the user's browser.
+www DNS Record:
+A subdomain record (usually an A record or CNAME) that points www.foobar.com to 8.8.8.8.
 
-The browser receives the HTML, parses it, and renders the final webpage. It may then make additional requests for the static content (CSS, images) mentioned in the HTML, which Nginx will serve directly.
+Web Server (Nginx):
+Handles HTTP/HTTPS requests, serves static content, and forwards dynamic requests to the application server.
 
-# 4. The Inherent Problems of This Design
-While simple and cheap, this single-server design has critical flaws for any serious application.
+Application Server:
+Executes the application code, processes logic, and interacts with the database.
 
-Single Point of Failure (SPOF): Because every component resides on one machine, any single failure brings the entire site down. If the server's hard drive fails, Nginx crashes, or the database gets corrupted, your website is offline. There is no redundancy.
+Database (MySQL):
+Stores persistent data like user accounts, product info, blog posts, etc.
 
-Downtime for Maintenance: When you need to deploy new code or apply a security patch, you often have to restart services like Nginx or the application server. This causes a period of downtime where the site is unavailable to users.
+Communication Protocol:
+Uses HTTP or HTTPS over TCP/IP to communicate with the user’s computer.
 
-Inability to Scale: If your website experiences a surge in traffic, the single server's resources (CPU, RAM, disk speed) will be exhausted. The site will become slow or crash. You cannot easily add more servers to handle the load (horizontal scaling) without completely redesigning the infrastructure.
+Issues with This Infrastructure
+Single Point of Failure (SPOF):
+If the single server fails, the entire website goes down.
+
+Downtime During Maintenance:
+Updating code or restarting services causes temporary unavailability.
+
+No Scalability:
+One server can only handle a limited amount of traffic; high loads cause slowdowns or crashes.

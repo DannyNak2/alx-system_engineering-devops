@@ -1,29 +1,118 @@
-## This is a minimal three-server layout:
+Distributed Web Infrastructure (3 Servers)
+Architecture Diagram (Text Representation)
 
-**IMAGE** https://imgur.com/a/hcF9Lxr
+                  Internet
+                      |
+              +----------------+
+              | Load Balancer  |  (HAProxy)
+              +----------------+
+                /            \
+         +------------+   +------------+
+         | Web Server |   | Web Server |
+         | (Nginx)    |   | (Nginx)    |
+         +------------+   +------------+
+                |                |
+          +-----------+    +-----------+
+          | App Server|    | App Server|
+          +-----------+    +-----------+
+                \              /
+                +--------------+
+                |   Database   |  (MySQL Primary-Replica)
+                +--------------+
 
-Server1 = HAProxy (LB); Server2 = Nginx web server; Server3 = App server which also hosts MySQL Primary.
 
-The Nginx server serves static assets, does caching, and reverse-proxies to the app server. HAProxy routes traffic to the Nginx server(s).
+Components and Why They’re Added
+Load Balancer (HAProxy)
 
-Application files (codebase) live on the application server (or in a shared repo/artifact deployed to the web/app servers).
+Distributes traffic between multiple backend web servers to improve availability and scalability.
 
-HAProxy (Load Balancer) — in front, accepts client requests and distributes them to web servers.
+Prevents overloading one server and improves fault tolerance.
 
-Why: hides backend servers, provides health checks, enables scaling and zero-downtime deploys.
+Two Web Servers (Nginx)
 
-Nginx (Web server / reverse proxy) — serves static files quickly, TLS offloading (if present), and forwards dynamic requests to the application.
+Serve static content (HTML, CSS, JS, images) quickly.
 
-Why: static files and caching are faster at the web tier; offloads work from app server.
+Forward dynamic requests to the application servers.
 
-Application Server (app runtime) — runs business logic, runs the codebase, connects to the DB.
+Adding two ensures that if one web server fails, the other still serves traffic.
 
-Why: executes dynamic logic, processes requests that need database access, business rules.
+Two Application Servers
 
-MySQL (Database) — persistent storage for users, sessions, data.
+Run the business logic (code base).
 
-Why: durable, ACID storage for application data.
+Separate from web servers for better performance and security.
 
-Application files (code base) — deployed to the app server (and potentially to web servers for SSR/static assets).
+Allows scaling the app layer independently from the web layer.
 
-Why: the code the app runs — must be deployed and versioned.
+Database Server (MySQL)
+
+Stores persistent data for the website (user accounts, posts, transactions, etc.).
+
+Configured as a Primary-Replica cluster for redundancy and read scalability.
+
+Application Files (Code Base)
+
+Shared across application servers (via deployment automation or shared storage).
+
+Keeps all servers running the same version of the code.
+
+Load Balancer Configuration
+Distribution Algorithm: Round Robin
+
+The load balancer cycles through each backend server in order, sending one request to each before starting over.
+
+Ensures even distribution without considering server load (simple but effective for equally powerful servers).
+
+Active-Active vs. Active-Passive Setup
+Active-Active:
+All backend servers actively handle requests at the same time.
+
+Benefit: Higher throughput, better resource utilization.
+
+Drawback: More complex to manage, requires consistent state syncing.
+
+Active-Passive:
+One server handles all requests, the other stays idle until the active server fails.
+
+Benefit: Simpler failover process.
+
+Drawback: Idle resources until a failure occurs.
+
+Our Setup: Active-Active for both web and application servers to maximize performance and redundancy.
+
+Primary-Replica (Master-Slave) Database Cluster
+Primary Node:
+Handles all writes (INSERT, UPDATE, DELETE).
+Replicates changes asynchronously or semi-synchronously to replicas.
+
+Replica Node(s):
+Handle read-only queries to reduce load on the primary.
+Can be promoted to primary in case of failure.
+
+How It Works:
+
+Application sends write queries to the primary DB.
+
+Primary replicates changes to replicas.
+
+Application can read from replicas to spread the read load.
+
+Issues in This Infrastructure
+SPOF (Single Point of Failure)
+
+Load balancer: If it goes down, no traffic reaches the servers.
+
+Primary database: If it fails, no new writes are possible until failover.
+
+Security Issues
+
+No firewalls: Servers exposed directly to the internet could be attacked.
+
+No HTTPS: All data is sent in plain text, vulnerable to interception.
+
+No Monitoring
+
+No system to detect downtime or unusual load.
+
+Failures could go unnoticed until users complain.
+
